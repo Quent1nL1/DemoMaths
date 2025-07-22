@@ -1,0 +1,19 @@
+# Node modules
+node_modules/
+
+# Environnements
+.env
+.env.local
+
+# Expo / React Native
+.expo/
+.expo-shared/
+*.expo.cache
+
+# Metro
+metro-cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
