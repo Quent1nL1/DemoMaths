@@ -6,7 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Button
+  Button,
+  ActivityIndicator
 } from 'react-native';
 import Checkbox from 'expo-checkbox';
 import Collapsible from 'react-native-collapsible';
@@ -19,44 +20,57 @@ import { useProgress } from '../store/useProgress';
 export default function MyDemosScreen() {
   const navigation = useNavigation();
   const { myDemos, toggleMyDemo } = useProgress();
-  const [chapters, setChapters] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<any[] | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
+  // Charge les chapitres + démos
   useEffect(() => {
     (async () => {
-      const { data: ch, error: errCh } = await supabase
-        .from('chapters')
-        .select('*')
-        .order('sort_index');
-      const { data: de, error: errDe } = await supabase
-        .from('demos')
-        .select('*')
-        .order('sort_index');
-      if (errCh || errDe) {
-        console.error(errCh || errDe);
-        setChapters([]);
-      } else {
+      try {
+        const { data: ch } = await supabase
+          .from('chapters')
+          .select('*')
+          .order('sort_index');
+        const { data: de } = await supabase
+          .from('demos')
+          .select('*')
+          .order('sort_index');
         setChapters(
           (ch ?? []).map((c) => ({
             ...c,
             demos: (de ?? []).filter((d) => d.chapter_id === c.id)
           }))
         );
+      } catch (e) {
+        console.error('Erreur Supabase MyDemosScreen:', e);
+        setChapters([]); 
       }
     })();
   }, []);
 
-  // Prépare la sélection à apprendre
+  // Affiche un loader tant que ça charge
+  if (chapters === null) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+        <Text>Chargement…</Text>
+      </View>
+    );
+  }
+
+  // Calcule la sélection
   const selectedDemos = chapters
     .flatMap((c) => c.demos)
     .filter((d: any) => myDemos.has(d.id));
 
+  console.log('Navigate to Learning with', selectedDemos.length, 'demos');
+
+  // Navigation vers l'écran Learning du stack Cours
   const handleLearn = () => {
-    // Navigation profonde vers le Stack "Cours" et l'écran "Learning"
-    navigation.getParent()?.navigate('Cours', {
+    navigation.navigate('Cours' as never, {
       screen: 'Learning',
       params: { demos: selectedDemos }
-    });
+    } as never);
   };
 
   return (
@@ -106,6 +120,11 @@ export default function MyDemosScreen() {
 }
 
 const styles = StyleSheet.create({
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
