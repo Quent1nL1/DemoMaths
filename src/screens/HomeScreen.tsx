@@ -1,22 +1,21 @@
+// src/screens/HomeScreen.tsx
+
 import React, { useEffect, useState } from 'react';
 import {
-  FlatList,
-  TouchableOpacity,
+  ScrollView,
+  View,
   Text,
+  TouchableOpacity,
   Image,
-  StyleSheet,
-  View
+  StyleSheet
 } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { useSettings } from '../store/useSettings';
 
-interface HomeScreenProps {
-  navigation: {
-    navigate: (screen: string, params?: any) => void;
-  };
-}
-
-export default function HomeScreen({ navigation }: HomeScreenProps) {
-  const [chapters, setChapters] = useState<any[]>([]);
+export default function HomeScreen({ navigation }: any) {
+  const [chapters, setChapters] = useState<any[] | null>(null);
+  const selectedCursus = useSettings(s => s.selectedCursus); // Set<string>
+  const themeColor     = useSettings(s => s.themeColor);
 
   useEffect(() => {
     supabase
@@ -33,6 +32,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       });
   }, []);
 
+  // 1) Chargement
+  if (chapters === null) {
+    return (
+      <View style={styles.center}>
+        <Text>Chargement…</Text>
+      </View>
+    );
+  }
+
+  // 2) Aucun chapitre trouvé côté base
   if (chapters.length === 0) {
     return (
       <View style={styles.center}>
@@ -41,46 +50,80 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     );
   }
 
+  // 3) Filtrer selon les cursus cochés
+  const filtered = chapters.filter(ch =>
+    selectedCursus.has(ch.cursus_code)
+  );
+
+  // 4) Si aucun chapitre n’est disponible pour ces cursus
+  if (filtered.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.emptyText}>
+          Aucun chapitre disponible pour vos cursus sélectionnés.{'\n'}
+          Allez dans les Paramètres pour en sélectionner.
+        </Text>
+      </View>
+    );
+  }
+
+  // 5) Regrouper les chapitres filtrés par cursus
+  const groups: Record<string, any[]> = {};
+  filtered.forEach(ch => {
+    if (!groups[ch.cursus_code]) groups[ch.cursus_code] = [];
+    groups[ch.cursus_code].push(ch);
+  });
+
   return (
-    <FlatList
-      contentContainerStyle={{ padding: 16 }}
-      data={chapters}
-      numColumns={2}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => navigation.navigate('Chapter', { chapter: item })}
-        >
-          {item.cover_url && <Image source={{ uri: item.cover_url }} style={styles.img} />}
-          <Text style={styles.title}>{item.title}</Text>
-        </TouchableOpacity>
-      )}
-    />
+    <ScrollView style={styles.container}>
+      {Object.entries(groups).map(([cursus, items]) => (
+        <View key={cursus} style={styles.section}>
+          <Text style={[styles.cursusHeader, { color: themeColor }]}>
+            Cursus {cursus}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.row}
+          >
+            {items.map(item => (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.card, { borderColor: themeColor }]}
+                onPress={() =>
+                  navigation.navigate('Chapter', { chapter: item })
+                }
+              >
+                {item.cover_url && (
+                  <Image source={{ uri: item.cover_url }} style={styles.img} />
+                )}
+                <Text style={styles.title}>{item.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+  container:     { flex: 1 },
+  center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyText:     { textAlign: 'center', color: '#666', padding: 16 },
+
+  section:       { marginVertical: 12 },
+  cursusHeader:  { fontSize: 18, fontWeight: '700', marginLeft: 16, marginBottom: 8 },
+  row:           { paddingLeft: 16 },
+  card:          {
+    width:         140,
+    marginRight:   12,
+    borderRadius:  16,
+    borderWidth:   2,
+    backgroundColor:'#fff',
+    overflow:      'hidden',
+    alignItems:    'center'
   },
-  card: {
-    flex: 1,
-    margin: 8,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    elevation: 2,
-    overflow: 'hidden',
-    alignItems: 'center'
-  },
-  img: {
-    width: '100%',
-    height: 100
-  },
-  title: {
-    padding: 12,
-    fontWeight: '600'
-  }
+  img:           { width: '100%', height: 80 },
+  title:         { padding: 8, textAlign: 'center' }
 });
