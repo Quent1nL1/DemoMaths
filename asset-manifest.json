@@ -1,6 +1,6 @@
 {
   "files": {
-    "main.js": "/DemoMaths/static/js/main.674c0880.js",
+    "main.js": "/DemoMaths/static/js/main.9333102e.js",
     "static/js/732.783bc47a.chunk.js": "/DemoMaths/static/js/732.783bc47a.chunk.js",
     "static/css/475.faac736b.css": "/DemoMaths/static/css/475.faac736b.css",
     "static/js/475.7928daf4.js": "/DemoMaths/static/js/475.7928daf4.js",
@@ -68,7 +68,7 @@
     "index.html": "/DemoMaths/index.html",
     "serve.json": "/DemoMaths/serve.json",
     "manifest.json": "/DemoMaths/manifest.json",
-    "main.674c0880.js.map": "/DemoMaths/static/js/main.674c0880.js.map",
+    "main.9333102e.js.map": "/DemoMaths/static/js/main.9333102e.js.map",
     "732.783bc47a.chunk.js.map": "/DemoMaths/static/js/732.783bc47a.chunk.js.map",
     "475.faac736b.css.map": "/DemoMaths/static/css/475.faac736b.css.map",
     "475.7928daf4.js.map": "/DemoMaths/static/js/475.7928daf4.js.map"
@@ -76,6 +76,6 @@
   "entrypoints": [
     "static/css/475.faac736b.css",
     "static/js/475.7928daf4.js",
-    "static/js/main.674c0880.js"
+    "static/js/main.9333102e.js"
   ]
 }
