@@ -1,9 +1,9 @@
 {
   "files": {
-    "main.js": "/DemoMaths/static/js/main.2b558858.js",
+    "main.js": "/DemoMaths/static/js/main.674c0880.js",
     "static/js/732.783bc47a.chunk.js": "/DemoMaths/static/js/732.783bc47a.chunk.js",
-    "static/css/411.e121c99e.css": "/DemoMaths/static/css/411.e121c99e.css",
-    "static/js/411.d4470a97.js": "/DemoMaths/static/js/411.d4470a97.js",
+    "static/css/475.faac736b.css": "/DemoMaths/static/css/475.faac736b.css",
+    "static/js/475.7928daf4.js": "/DemoMaths/static/js/475.7928daf4.js",
     "static/media/MaterialCommunityIcons.ttf": "/DemoMaths/static/media/MaterialCommunityIcons.5d42b4e60858731e7b65.ttf",
     "static/media/KaTeX_AMS-Regular.ttf": "/DemoMaths/static/media/KaTeX_AMS-Regular.853be92419a6c3766b9a.ttf",
     "static/media/KaTeX_Main-Regular.ttf": "/DemoMaths/static/media/KaTeX_Main-Regular.9eba1d77abcf2aa6e94e.ttf",
@@ -68,14 +68,14 @@
     "index.html": "/DemoMaths/index.html",
     "serve.json": "/DemoMaths/serve.json",
     "manifest.json": "/DemoMaths/manifest.json",
-    "main.2b558858.js.map": "/DemoMaths/static/js/main.2b558858.js.map",
+    "main.674c0880.js.map": "/DemoMaths/static/js/main.674c0880.js.map",
     "732.783bc47a.chunk.js.map": "/DemoMaths/static/js/732.783bc47a.chunk.js.map",
-    "411.e121c99e.css.map": "/DemoMaths/static/css/411.e121c99e.css.map",
-    "411.d4470a97.js.map": "/DemoMaths/static/js/411.d4470a97.js.map"
+    "475.faac736b.css.map": "/DemoMaths/static/css/475.faac736b.css.map",
+    "475.7928daf4.js.map": "/DemoMaths/static/js/475.7928daf4.js.map"
   },
   "entrypoints": [
-    "static/css/411.e121c99e.css",
-    "static/js/411.d4470a97.js",
-    "static/js/main.2b558858.js"
+    "static/css/475.faac736b.css",
+    "static/js/475.7928daf4.js",
+    "static/js/main.674c0880.js"
   ]
 }
