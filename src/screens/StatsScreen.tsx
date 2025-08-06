@@ -20,7 +20,7 @@ export default function StatsScreen() {
   const themeColor     = useSettings(s => s.themeColor);
   const selectedCursus = useSettings(s => s.selectedCursus); // Set<string>
 
-  // 1) Chargement
+  // Chargement des données
   useEffect(() => {
     supabase.from('chapters').select('*').order('sort_index')
       .then(({ data }) => setChapters(data ?? []));
@@ -28,7 +28,7 @@ export default function StatsScreen() {
       .then(({ data }) => setDemos(data ?? []));
   }, []);
 
-  // 2) Loader
+  // Loader
   if (chapters === null || demos === null) {
     return (
       <View style={styles.center}>
@@ -37,7 +37,7 @@ export default function StatsScreen() {
     );
   }
 
-  // 3) Aucun cursus sélectionné ?
+  // Aucun cursus sélectionné
   if (selectedCursus.size === 0) {
     return (
       <View style={styles.center}>
@@ -49,14 +49,14 @@ export default function StatsScreen() {
     );
   }
 
-  // 4) Stats globales de la sélection
+  // Stats globales de la sélection
   const selectedDemos = demos.filter(d => myDemos.has(d.id));
   const totalSel      = selectedDemos.length;
   const selNM         = selectedDemos.filter(d => mastery[d.id] === 'not_mastered').length;
   const selIP         = selectedDemos.filter(d => mastery[d.id] === 'in_progress').length;
   const selM          = selectedDemos.filter(d => mastery[d.id] === 'mastered').length;
 
-  // 5) Grouper chapitres par cursus sélectionné
+  // Grouper chapitres par cursus
   const byCursus: Record<string, any[]> = {};
   chapters.forEach(ch => {
     if (!selectedCursus.has(ch.cursus_code)) return;
@@ -64,7 +64,7 @@ export default function StatsScreen() {
     byCursus[ch.cursus_code].push(ch);
   });
 
-  // 6) Couleurs selon statut
+  // Couleurs selon statut
   const colorMap: Record<string, string> = {
     mastered:     '#34c759',
     in_progress:  '#ff9f0a',
@@ -74,17 +74,17 @@ export default function StatsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Sélection */}
+      {/* Sélection globale */}
       <View style={styles.row}>
         <Text style={[styles.header, { color: themeColor }]}>Sélection</Text>
         <View style={styles.pills}>
-          <View style={[styles.pill, { backgroundColor: '#ff3b30' }]}>
+          <View style={[styles.pill, { backgroundColor: colorMap.not_mastered }]}>
             <Text style={styles.pillText}>{`${selNM}/${totalSel}`}</Text>
           </View>
-          <View style={[styles.pill, { backgroundColor: '#ff9f0a' }]}>
+          <View style={[styles.pill, { backgroundColor: colorMap.in_progress }]}>
             <Text style={styles.pillText}>{`${selIP}/${totalSel}`}</Text>
           </View>
-          <View style={[styles.pill, { backgroundColor: '#34c759' }]}>
+          <View style={[styles.pill, { backgroundColor: colorMap.mastered }]}>
             <Text style={styles.pillText}>{`${selM}/${totalSel}`}</Text>
           </View>
         </View>
@@ -106,13 +106,13 @@ export default function StatsScreen() {
               <View key={ch.id} style={styles.row}>
                 <Text style={styles.chapterTitle}>{ch.title}</Text>
                 <View style={styles.pills}>
-                  <View style={[styles.pill, { backgroundColor: '#ff3b30' }]}>
+                  <View style={[styles.pill, { backgroundColor: colorMap.not_mastered }]}>
                     <Text style={styles.pillText}>{`${nm}/${total}`}</Text>
                   </View>
-                  <View style={[styles.pill, { backgroundColor: '#ff9f0a' }]}>
+                  <View style={[styles.pill, { backgroundColor: colorMap.in_progress }]}>
                     <Text style={styles.pillText}>{`${ip}/${total}`}</Text>
                   </View>
-                  <View style={[styles.pill, { backgroundColor: '#34c759' }]}>
+                  <View style={[styles.pill, { backgroundColor: colorMap.mastered }]}>
                     <Text style={styles.pillText}>{`${m}/${total}`}</Text>
                   </View>
                 </View>
@@ -126,28 +126,30 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:    { padding: 16, paddingBottom: 32 },
-  center:       { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText:    { textAlign: 'center', color: '#666', padding: 16 },
+  container:     { padding: 16, paddingBottom: 32 },
+  center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyText:     { textAlign: 'center', color: '#666', padding: 16 },
 
-  row:          {
+  row: {
     flexDirection:  'row',
     alignItems:     'center',
     justifyContent: 'space-between',
     marginBottom:   12
   },
-  header:       { fontSize: 20, fontWeight: '700' },
-  pills:        { flexDirection: 'row' },
-
-  pill:         {
+  header:        { fontSize: 20, fontWeight: '700' },
+  pills:         { flexDirection: 'row' },
+  pill: {
     paddingHorizontal: 10,
     paddingVertical:   4,
     borderRadius:      8,
-    marginLeft:        6
+    marginLeft:        6,
+    minWidth:          50,       // ← largeur minimale uniforme
+    alignItems:        'center', // ← centre le texte horizontalement
+    justifyContent:    'center'  // ← centre le texte verticalement
   },
-  pillText:     { color: 'white', fontWeight: '600' },
+  pillText:      { color: 'white', fontWeight: '600' },
 
-  section:      { marginTop: 24 },
-  cursusHeader: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
-  chapterTitle: { fontSize: 16, flex: 1 }
+  section:       { marginTop: 24 },
+  cursusHeader:  { fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  chapterTitle:  { fontSize: 16, flex: 1 }
 });

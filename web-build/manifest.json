@@ -1,0 +1,7 @@
+{
+  "display": "standalone",
+  "lang": "en",
+  "name": "DemoMaths",
+  "short_name": "DemoMaths",
+  "start_url": "/?utm_source=web_app_manifest"
+}

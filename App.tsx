@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import 'katex/dist/katex.min.css';
 
 import HomeScreen     from './src/screens/HomeScreen';
 import ChapterScreen  from './src/screens/ChapterScreen';

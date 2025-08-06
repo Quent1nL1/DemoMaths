@@ -37,7 +37,8 @@ export default function LearningScreen({ route, navigation }: any) {
 
         {/* Énoncé LaTeX, s'auto-wrap à la largeur dispo */}
         <MathJaxView tex={demo.statement} />
-
+        <Text>{'\n'}</Text>
+    
         {/* Titre de la démo */}
         {showProof && <Text style={styles.title}>{"Démonstration :"}</Text>}
 
@@ -59,7 +60,7 @@ export default function LearningScreen({ route, navigation }: any) {
             }}
           />
           <Button
-            title="À travailler"
+            title="À approfondir"
             color="#ff9f0a"
             onPress={() => {
               setMastery(demo.id, 'in_progress');

@@ -1,5 +1,4 @@
 // src/screens/HomeScreen.tsx
-
 import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
@@ -7,7 +6,8 @@ import {
   Text,
   TouchableOpacity,
   Image,
-  StyleSheet
+  StyleSheet,
+  LayoutChangeEvent,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useSettings } from '../store/useSettings';
@@ -16,6 +16,9 @@ export default function HomeScreen({ navigation }: any) {
   const [chapters, setChapters] = useState<any[] | null>(null);
   const selectedCursus = useSettings(s => s.selectedCursus); // Set<string>
   const themeColor     = useSettings(s => s.themeColor);
+
+  // Nouvel état pour stocker la hauteur max des cartes
+  const [cardHeight, setCardHeight] = useState<number>(0);
 
   useEffect(() => {
     supabase
@@ -74,6 +77,14 @@ export default function HomeScreen({ navigation }: any) {
     groups[ch.cursus_code].push(ch);
   });
 
+  // Callback pour mesurer chaque carte et mettre à jour la hauteur max
+  const onCardLayout = (e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    if (h > cardHeight) {
+      setCardHeight(h);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       {Object.entries(groups).map(([cursus, items]) => (
@@ -81,15 +92,18 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={[styles.cursusHeader, { color: themeColor }]}>
             Cursus {cursus}
           </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.row}
-          >
+
+          <View style={styles.row}>
             {items.map(item => (
               <TouchableOpacity
                 key={item.id}
-                style={[styles.card, { borderColor: themeColor }]}
+                style={[
+                  styles.card,
+                  { borderColor: themeColor },
+                  // une fois qu'on connaît la hauteur max, on l'applique
+                  cardHeight > 0 && { height: cardHeight }
+                ]}
+                onLayout={onCardLayout}
                 onPress={() =>
                   navigation.navigate('Chapter', { chapter: item })
                 }
@@ -100,7 +114,7 @@ export default function HomeScreen({ navigation }: any) {
                 <Text style={styles.title}>{item.title}</Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
         </View>
       ))}
     </ScrollView>
@@ -114,16 +128,30 @@ const styles = StyleSheet.create({
 
   section:       { marginVertical: 12 },
   cursusHeader:  { fontSize: 18, fontWeight: '700', marginLeft: 16, marginBottom: 8 },
-  row:           { paddingLeft: 16 },
-  card:          {
+
+  row: {
+    flexDirection: 'row',
+    flexWrap:      'wrap',
+    paddingLeft:   16,
+  },
+
+  card: {
     width:         140,
     marginRight:   12,
+    marginBottom:  12,
     borderRadius:  16,
     borderWidth:   2,
     backgroundColor:'#fff',
     overflow:      'hidden',
-    alignItems:    'center'
+    alignItems:    'center',
+    justifyContent:'center'
   },
   img:           { width: '100%', height: 80 },
-  title:         { padding: 8, textAlign: 'center' }
+
+  title: {
+    padding:      8,
+    textAlign:    'center',
+    width:        '100%',
+    flexWrap:     'wrap'
+  }
 });

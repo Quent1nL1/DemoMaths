@@ -1,29 +1,30 @@
 // src/components/MathJaxView.tsx
 import React from 'react';
-import {
-  View,
-  Text,
-  Platform,
-  Dimensions,
-  StyleSheet
-} from 'react-native';
+import { View, Text, Platform, StyleSheet, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { renderToString } from 'katex';
+import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 
+type Props = {
+  tex: string;
+};
+
 const htmlTemplate = (math: string, display: boolean) => `
-<!DOCTYPE html><html><head>
+<!DOCTYPE html>
+<html><head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <style>
     body { margin:0; padding:0; }
     #math {
-      display:inline-block;
-      white-space:normal !important;
-      word-wrap:break-word;
-      word-break:break-all;
-      max-width:100%;
-      font-size:1.2em;
+      display: ${display ? 'block' : 'inline-block'};
+      white-space: normal !important;
+      overflow-wrap: break-word;
+      word-break: normal;
+      max-width: 100%;
+      font-size: 1.2em;
+      margin: ${display ? '0.5em 0' : '0 0.2em'};
     }
   </style>
 </head><body>
@@ -39,96 +40,79 @@ const htmlTemplate = (math: string, display: boolean) => `
 </body></html>
 `;
 
-export default function MathJaxView({ tex }: { tex: string }) {
-  // split en gardant les délimiteurs $...$ ou $$...$$
-  const parts = tex.split(/(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g).filter(Boolean);
+export default function MathJaxView({ tex }: Props) {
+  const paragraphs = tex.split(/\r?\n/).filter(p => p.length > 0);
+  const { width } = Dimensions.get('window');
 
+  // Web : use <InlineMath> / <BlockMath> + <span>
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.container}>
+        {paragraphs.map((para, pIdx) => {
+          const parts = para.split(/(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g).filter(Boolean);
+          return (
+            <div key={pIdx} style={styles.webParagraph}>
+              {parts.map((part, i) => {
+                const block = part.match(/^\$\$([\s\S]+)\$\$$/);
+                if (block) {
+                  return <BlockMath key={i} math={block[1]} />;
+                }
+                const inline = part.match(/^\$([^$]+)\$$/);
+                if (inline) {
+                  return <InlineMath key={i} math={inline[1]} />;
+                }
+                return (
+                  <span key={i} style={styles.plainWeb}>
+                    {part}
+                  </span>
+                );
+              })}
+            </div>
+          );
+        })}
+      </View>
+    );
+  }
+
+  // Mobile / iOS / Android : same as before
   return (
-    <View style={styles.wrapper}>
-      {parts.map((part, i) => {
-        // cas $$...$$
-        const m2 = part.match(/^\$\$([\s\S]+)\$\$$/);
-        if (m2) {
-          const math = m2[1];
-          if (Platform.OS === 'web') {
-            const html = renderToString(math, {
-              throwOnError: false,
-              displayMode: true
-            });
-            // on utilise un <div> pour web
-            // @ts-ignore
-            return (
-              <div
-                key={i}
-                dangerouslySetInnerHTML={{ __html: html }}
-                style={{
-                  display: 'inline-block',
-                  whiteSpace: 'normal',
-                  wordWrap: 'break-word',
-                  wordBreak: 'break-all',
-                  maxWidth: '100%',
-                  margin: 2
-                }}
-              />
-            );
-          } else {
-            const { width } = Dimensions.get('window');
-            return (
-              <WebView
-                key={i}
-                originWhitelist={['*']}
-                source={{ html: htmlTemplate(math, true) }}
-                style={{ width, height: 150, backgroundColor: 'transparent' }}
-                scrollEnabled={false}
-              />
-            );
-          }
-        }
-
-        // cas $...$
-        const m1 = part.match(/^\$([^$]+)\$$/);
-        if (m1) {
-          const math = m1[1];
-          if (Platform.OS === 'web') {
-            const html = renderToString(math, {
-              throwOnError: false,
-              displayMode: false
-            });
-            // idem, <div>
-            // @ts-ignore
-            return (
-              <div
-                key={i}
-                dangerouslySetInnerHTML={{ __html: html }}
-                style={{
-                  display: 'inline-block',
-                  whiteSpace: 'normal',
-                  wordWrap: 'break-word',
-                  wordBreak: 'break-all',
-                  maxWidth: '100%',
-                  margin: 2
-                }}
-              />
-            );
-          } else {
-            const { width } = Dimensions.get('window');
-            return (
-              <WebView
-                key={i}
-                originWhitelist={['*']}
-                source={{ html: htmlTemplate(math, false) }}
-                style={{ width, height: 40, backgroundColor: 'transparent' }}
-                scrollEnabled={false}
-              />
-            );
-          }
-        }
-
-        // sinon texte brut
+    <View style={styles.container}>
+      {paragraphs.map((para, pIdx) => {
+        const parts = para.split(/(\$\$[\s\S]+?\$\$|\$[^$]+\$)/g).filter(Boolean);
         return (
-          <Text key={i} style={styles.plainText}>
-            {part}
-          </Text>
+          <View key={pIdx} style={styles.wrapper}>
+            {parts.map((part, i) => {
+              const block = part.match(/^\$\$([\s\S]+)\$\$$/);
+              if (block) {
+                return (
+                  <WebView
+                    key={i}
+                    originWhitelist={['*']}
+                    source={{ html: htmlTemplate(block[1], true) }}
+                    style={[styles.blockMobile, { width }]}
+                    scrollEnabled={false}
+                  />
+                );
+              }
+              const inline = part.match(/^\$([^$]+)\$$/);
+              if (inline) {
+                return (
+                  <WebView
+                    key={i}
+                    originWhitelist={['*']}
+                    source={{ html: htmlTemplate(inline[1], false) }}
+                    style={styles.inlineMobile}
+                    scrollEnabled={false}
+                  />
+                );
+              }
+              return (
+                <Text key={i} style={styles.plainText}>
+                  {part}
+                </Text>
+              );
+            })}
+          </View>
         );
       })}
     </View>
@@ -136,14 +120,54 @@ export default function MathJaxView({ tex }: { tex: string }) {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flexGrow: 0,
+  },
   wrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    alignItems: 'flex-start',
-    marginVertical: 12
+    alignItems: 'baseline',  // align on text baseline
+    marginVertical: 4,
   },
+  // Mobile plain text
   plainText: {
     fontSize: 16,
-    lineHeight: 24
-  }
+    lineHeight: 24,
+    marginRight: 2,
+    flexShrink: 1,
+    minWidth: 0,
+    whiteSpace: 'normal',
+    overflowWrap: 'break-word',  // wrap at spaces
+    wordBreak: 'normal',         // no mid-word breaks
+  },
+  // Web plain text
+  plainWeb: {
+    whiteSpace: 'normal',
+    overflowWrap: 'break-word',
+    wordBreak: 'normal',
+  },
+  // Web paragraph container
+  webParagraph: {
+    width: '100%',
+    margin: '0.5em 0',
+    whiteSpace: 'normal',
+    overflowWrap: 'break-word',
+    wordBreak: 'normal',
+  },
+  // Mobile inline math
+  inlineMobile: {
+    height: 40,
+    backgroundColor: 'transparent',
+    marginHorizontal: 2,
+    flexShrink: 1,
+    minWidth: 0,
+    alignSelf: 'baseline',
+  },
+  // Mobile block math
+  blockMobile: {
+    height: 150,
+    backgroundColor: 'transparent',
+    marginVertical: 8,
+    flexShrink: 0,
+  },
 });

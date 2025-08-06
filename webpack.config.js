@@ -1,19 +1,27 @@
 // webpack.config.js
 const createExpoWebpackConfigAsync = require('@expo/webpack-config');
+const webpack = require('webpack');
 
-module.exports = async function(env, argv) {
+module.exports = async (env, argv) => {
   const config = await createExpoWebpackConfigAsync(env, argv);
 
-  // Shim des modules Node non disponibles dans le runtime web
+  // 1️⃣  Indiquer les remplacements (polyfills)
   config.resolve.fallback = {
     ...(config.resolve.fallback || {}),
-    fs: false,
-    os: false,
-    path: false,
-    tty: false,
-    // on pointe stream vers stream-browserify
+    crypto: require.resolve('crypto-browserify'),
     stream: require.resolve('stream-browserify'),
+    util:   require.resolve('util/'),
+    buffer: require.resolve('buffer/'),
   };
+
+  // 2️⃣  Injecter Buffer et process globalement
+  config.plugins = [
+    ...(config.plugins || []),
+    new webpack.ProvidePlugin({
+      Buffer: ['buffer', 'Buffer'],
+      process: 'process/browser',
+    }),
+  ];
 
   return config;
 };
