@@ -1,5 +1,5 @@
 // src/screens/HomeScreen.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -9,149 +9,112 @@ import {
   StyleSheet,
   LayoutChangeEvent,
 } from 'react-native';
-import { supabase } from '../lib/supabase';
 import { useSettings } from '../store/useSettings';
+import { getAllChapters } from '../lib/dataSource';
+import type { Chapter } from '../store/useCustomData';
 
 export default function HomeScreen({ navigation }: any) {
-  const [chapters, setChapters] = useState<any[] | null>(null);
-  const selectedCursus = useSettings(s => s.selectedCursus); // Set<string>
-  const themeColor     = useSettings(s => s.themeColor);
-
-  // Nouvel état pour stocker la hauteur max des cartes
-  const [cardHeight, setCardHeight] = useState<number>(0);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const selectedCursus = useSettings(s => s.selectedCursus);
+  const themeColor = useSettings(s => s.themeColor);
 
   useEffect(() => {
-    supabase
-      .from('chapters')
-      .select('*')
-      .order('sort_index')
-      .then(({ data, error }) => {
-        if (error) {
-          console.error(error);
-          setChapters([]);
-        } else {
-          setChapters(data ?? []);
-        }
-      });
+    (async () => {
+      const ch = await getAllChapters();
+      setChapters(ch);
+    })();
   }, []);
 
-  // 1) Chargement
-  if (chapters === null) {
-    return (
-      <View style={styles.center}>
-        <Text>Chargement…</Text>
-      </View>
-    );
-  }
-
-  // 2) Aucun chapitre trouvé côté base
-  if (chapters.length === 0) {
-    return (
-      <View style={styles.center}>
-        <Text>Aucun chapitre trouvé</Text>
-      </View>
-    );
-  }
-
-  // 3) Filtrer selon les cursus cochés
-  const filtered = chapters.filter(ch =>
-    selectedCursus.has(ch.cursus_code)
-  );
-
-  // 4) Si aucun chapitre n’est disponible pour ces cursus
-  if (filtered.length === 0) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.emptyText}>
-          Aucun chapitre disponible pour vos cursus sélectionnés.{'\n'}
-          Allez dans les Paramètres pour en sélectionner.
-        </Text>
-      </View>
-    );
-  }
-
-  // 5) Regrouper les chapitres filtrés par cursus
-  const groups: Record<string, any[]> = {};
-  filtered.forEach(ch => {
-    if (!groups[ch.cursus_code]) groups[ch.cursus_code] = [];
-    groups[ch.cursus_code].push(ch);
-  });
-
-  // Callback pour mesurer chaque carte et mettre à jour la hauteur max
-  const onCardLayout = (e: LayoutChangeEvent) => {
-    const h = e.nativeEvent.layout.height;
-    if (h > cardHeight) {
-      setCardHeight(h);
-    }
+  const [cardWidth, setCardWidth] = useState(140);
+  const onLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w <= 360) setCardWidth((w - 16 - 12) / 2);
+    else if (w <= 540) setCardWidth((w - 16 - 12 * 2) / 3);
+    else setCardWidth((w - 16 - 12 * 3) / 4);
   };
 
-  return (
-    <ScrollView style={styles.container}>
-      {Object.entries(groups).map(([cursus, items]) => (
-        <View key={cursus} style={styles.section}>
-          <Text style={[styles.cursusHeader, { color: themeColor }]}>
-            Cursus {cursus}
-          </Text>
+  // Filtrer selon les cursus sélectionnés
+  const filtered = useMemo(
+    () =>
+      chapters.filter(
+        ch => selectedCursus.size === 0 || selectedCursus.has(ch.cursus_code)
+      ),
+    [chapters, selectedCursus]
+  );
 
+  // Regrouper par cursus et trier
+  const groups = useMemo(() => {
+    const map: Record<string, Chapter[]> = {};
+    for (const ch of filtered) {
+      if (!map[ch.cursus_code]) map[ch.cursus_code] = [];
+      map[ch.cursus_code].push(ch);
+    }
+    // Tri des chapitres dans chaque groupe: sort_index puis titre
+    Object.values(map).forEach(list =>
+      list.sort((a, b) => {
+        const sa = a.sort_index ?? 1e9;
+        const sb = b.sort_index ?? 1e9;
+        if (sa !== sb) return sa - sb;
+        return a.title.localeCompare(b.title);
+      })
+    );
+    // Tri des groupes par code de cursus
+    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [filtered]);
+
+  return (
+    <ScrollView contentContainerStyle={styles.container} onLayout={onLayout}>
+      {groups.map(([cursusCode, list]) => (
+        <View key={cursusCode} style={styles.section}>
+          <Text style={styles.cursusTitle}>{cursusCode}</Text>
           <View style={styles.row}>
-            {items.map(item => (
+            {list.map(ch => (
               <TouchableOpacity
-                key={item.id}
-                style={[
-                  styles.card,
-                  { borderColor: themeColor },
-                  // une fois qu'on connaît la hauteur max, on l'applique
-                  cardHeight > 0 && { height: cardHeight }
-                ]}
-                onLayout={onCardLayout}
-                onPress={() =>
-                  navigation.navigate('Chapter', { chapter: item })
-                }
+                key={ch.id}
+                style={[styles.card, { width: cardWidth, borderColor: themeColor }]}
+                onPress={() => navigation.navigate('Chapter', { chapter: ch })}
               >
-                {item.cover_url && (
-                  <Image source={{ uri: item.cover_url }} style={styles.img} />
-                )}
-                <Text style={styles.title}>{item.title}</Text>
+                <View style={styles.imgWrap}>
+                  {ch.cover_url ? (
+                    <Image source={{ uri: ch.cover_url }} style={styles.img} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.img, { alignItems: 'center', justifyContent: 'center' }]}>
+                      <Text style={{ color: '#999' }}>Sans image</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.title}>{ch.title}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
       ))}
+
+      <View style={{ height: 24 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container:     { flex: 1 },
-  center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText:     { textAlign: 'center', color: '#666', padding: 16 },
+  container: { paddingTop: 16, paddingBottom: 24 },
+  h1: { fontSize: 22, fontWeight: '700', marginHorizontal: 16, marginBottom: 12 },
 
-  section:       { marginVertical: 12 },
-  cursusHeader:  { fontSize: 18, fontWeight: '700', marginLeft: 16, marginBottom: 8 },
+  section: { marginBottom: 16 },
+  cursusTitle: { fontSize: 18, fontWeight: '700', marginHorizontal: 16, marginBottom: 8 },
 
-  row: {
-    flexDirection: 'row',
-    flexWrap:      'wrap',
-    paddingLeft:   16,
-  },
-
+  row: { flexDirection: 'row', flexWrap: 'wrap', paddingLeft: 16 },
   card: {
-    width:         140,
-    marginRight:   12,
-    marginBottom:  12,
-    borderRadius:  16,
-    borderWidth:   2,
-    backgroundColor:'#fff',
-    overflow:      'hidden',
-    alignItems:    'center',
-    justifyContent:'center'
+    marginRight: 12,
+    marginBottom: 12,
+    borderRadius: 16,
+    borderWidth: 2,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
-  img:           { width: '100%', height: 80 },
-
-  title: {
-    padding:      8,
-    textAlign:    'center',
-    width:        '100%',
-    flexWrap:     'wrap'
-  }
+  imgWrap: { width: '100%', height: 80, backgroundColor: '#fafafa' },
+  img: { width: '100%', height: '100%' },
+  title: { padding: 8, textAlign: 'center', width: '100%', flexWrap: 'wrap' }
 });
+

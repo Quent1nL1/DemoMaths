@@ -1,5 +1,5 @@
 // src/screens/StatsScreen.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -7,28 +7,78 @@ import {
   StyleSheet,
   ActivityIndicator
 } from 'react-native';
-import { supabase } from '../lib/supabase';
 import { useProgress } from '../store/useProgress';
 import { useSettings } from '../store/useSettings';
+import { getAllChapters, getAllDemos } from '../lib/dataSource';
+import type { Chapter, Demo } from '../store/useCustomData';
+
+type Counts = { nm: number; ip: number; m: number; total: number };
+
+function computeCounts(list: Demo[], mastery: Record<string, string | undefined>): Counts {
+  let nm = 0, ip = 0, m = 0;
+  for (const d of list) {
+    const s = mastery[d.id];
+    if (s === 'not_mastered') nm++;
+    else if (s === 'in_progress') ip++;
+    else if (s === 'mastered') m++;
+  }
+  return { nm, ip, m, total: list.length };
+}
 
 export default function StatsScreen() {
-  const [chapters, setChapters] = useState<any[] | null>(null);
-  const [demos, setDemos]       = useState<any[] | null>(null);
-
-  const mastery        = useProgress(s => s.mastery);
-  const myDemos        = useProgress(s => s.myDemos);
+  const [chapters, setChapters] = useState<Chapter[] | null>(null);
+  const [demos, setDemos]       = useState<Demo[] | null>(null);
   const themeColor     = useSettings(s => s.themeColor);
-  const selectedCursus = useSettings(s => s.selectedCursus); // Set<string>
+  const selectedCursus = useSettings(s => s.selectedCursus);
+  const { mastery, myDemos } = useProgress();
 
-  // Chargement des données
   useEffect(() => {
-    supabase.from('chapters').select('*').order('sort_index')
-      .then(({ data }) => setChapters(data ?? []));
-    supabase.from('demos').select('*')
-      .then(({ data }) => setDemos(data ?? []));
+    let cancelled = false;
+    (async () => {
+      const ch = await getAllChapters();
+      const de = await getAllDemos();
+      if (!cancelled) {
+        setChapters(ch);
+        setDemos(de);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  // Loader
+  // Toujours exécuter les hooks avec des valeurs sûres
+  const safeChapters = chapters ?? [];
+  const safeDemos    = demos ?? [];
+  const selSet       = selectedCursus ?? new Set<string>();
+
+  // Mes démos (global)
+  const myDemosList = useMemo(
+    () => safeDemos.filter(d => myDemos.has(d.id)),
+    [safeDemos, myDemos]
+  );
+  const myCounts = useMemo(
+    () => computeCounts(myDemosList, mastery),
+    [myDemosList, mastery]
+  );
+
+  // Groupes par cursus (triés)
+  const byCursusSorted = useMemo(() => {
+    const map: Record<string, Chapter[]> = {};
+    for (const ch of safeChapters) {
+      if (selSet.size > 0 && !selSet.has(ch.cursus_code)) continue;
+      (map[ch.cursus_code] ||= []).push(ch);
+    }
+    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [safeChapters, selSet]);
+
+  // Démos par chapitre
+  const demosByChapter = useMemo(() => {
+    const map: Record<string, Demo[]> = {};
+    for (const d of safeDemos) {
+      (map[d.chapter_id] ||= []).push(d);
+    }
+    return map;
+  }, [safeDemos]);
+
   if (chapters === null || demos === null) {
     return (
       <View style={styles.center}>
@@ -37,90 +87,61 @@ export default function StatsScreen() {
     );
   }
 
-  // Aucun cursus sélectionné
-  if (selectedCursus.size === 0) {
+  if (selSet.size === 0) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.emptyText}>
-          Aucun cursus sélectionné.{'\n'}
-          Allez dans Paramètres pour en choisir.
-        </Text>
+      <View style={styles.container}>
+        <Text style={styles.h1}>Statistiques</Text>
+
+        <Text style={styles.blockTitle}>Mes démos (global)</Text>
+        <View style={styles.pillRow}>
+          <View style={[styles.pill, { backgroundColor: '#ff3b30' }]}><Text style={styles.pillText}>{myCounts.nm}/{myCounts.total}</Text></View>
+          <View style={[styles.pill, { backgroundColor: '#ff9f0a' }]}><Text style={styles.pillText}>{myCounts.ip}/{myCounts.total}</Text></View>
+          <View style={[styles.pill, { backgroundColor: '#34c759' }]}><Text style={styles.pillText}>{myCounts.m}/{myCounts.total}</Text></View>
+        </View>
+
+        <View style={{ marginTop: 12 }}>
+          <Text style={styles.emptyText}>
+            Aucun cursus sélectionné.{'\n'}
+            Allez dans Paramètres pour en choisir.
+          </Text>
+        </View>
       </View>
     );
   }
 
-  // Stats globales de la sélection
-  const selectedDemos = demos.filter(d => myDemos.has(d.id));
-  const totalSel      = selectedDemos.length;
-  const selNM         = selectedDemos.filter(d => mastery[d.id] === 'not_mastered').length;
-  const selIP         = selectedDemos.filter(d => mastery[d.id] === 'in_progress').length;
-  const selM          = selectedDemos.filter(d => mastery[d.id] === 'mastered').length;
-
-  // Grouper chapitres par cursus
-  const byCursus: Record<string, any[]> = {};
-  chapters.forEach(ch => {
-    if (!selectedCursus.has(ch.cursus_code)) return;
-    if (!byCursus[ch.cursus_code]) byCursus[ch.cursus_code] = [];
-    byCursus[ch.cursus_code].push(ch);
-  });
-
-  // Couleurs selon statut
-  const colorMap: Record<string, string> = {
-    mastered:     '#34c759',
-    in_progress:  '#ff9f0a',
-    not_mastered: '#ff3b30',
-    unrated:      '#888'
-  };
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Sélection globale */}
-      <View style={styles.row}>
-        <Text style={[styles.header, { color: themeColor }]}>Sélection</Text>
-        <View style={styles.pills}>
-          <View style={[styles.pill, { backgroundColor: colorMap.not_mastered }]}>
-            <Text style={styles.pillText}>{`${selNM}/${totalSel}`}</Text>
-          </View>
-          <View style={[styles.pill, { backgroundColor: colorMap.in_progress }]}>
-            <Text style={styles.pillText}>{`${selIP}/${totalSel}`}</Text>
-          </View>
-          <View style={[styles.pill, { backgroundColor: colorMap.mastered }]}>
-            <Text style={styles.pillText}>{`${selM}/${totalSel}`}</Text>
-          </View>
-        </View>
+      <Text style={styles.h1}>Statistiques</Text>
+
+      {/* Mes démos (global) */}
+      <Text style={styles.cursusHeader}>Mes démos</Text>
+      <View style={styles.pillRow}>
+        <View style={[styles.pill, { backgroundColor: '#ff3b30' }]}><Text style={styles.pillText}>{myCounts.nm}/{myCounts.total}</Text></View>
+        <View style={[styles.pill, { backgroundColor: '#ff9f0a' }]}><Text style={styles.pillText}>{myCounts.ip}/{myCounts.total}</Text></View>
+        <View style={[styles.pill, { backgroundColor: '#34c759' }]}><Text style={styles.pillText}>{myCounts.m}/{myCounts.total}</Text></View>
       </View>
 
-      {/* Stats par chapitre */}
-      {Object.entries(byCursus).map(([cursus, chs]) => (
+      {/* Par chapitre (par cursus) */}
+      {byCursusSorted.map(([cursus, chs]) => (
         <View key={cursus} style={styles.section}>
-          <Text style={[styles.cursusHeader, { color: themeColor }]}>
-            {cursus}
-          </Text>
+          <Text style={styles.cursusHeader}>{cursus}</Text>
           {chs.map(ch => {
-            const chDemos = demos.filter(d => d.chapter_id === ch.id);
-            const total   = chDemos.length;
-            const nm      = chDemos.filter(d => mastery[d.id] === 'not_mastered').length;
-            const ip      = chDemos.filter(d => mastery[d.id] === 'in_progress').length;
-            const m       = chDemos.filter(d => mastery[d.id] === 'mastered').length;
+            const list = demosByChapter[ch.id] ?? [];
+            if (list.length === 0) return null;
+            const c = computeCounts(list, mastery);
             return (
-              <View key={ch.id} style={styles.row}>
+              <View key={ch.id} style={styles.chapterRow}>
                 <Text style={styles.chapterTitle}>{ch.title}</Text>
-                <View style={styles.pills}>
-                  <View style={[styles.pill, { backgroundColor: colorMap.not_mastered }]}>
-                    <Text style={styles.pillText}>{`${nm}/${total}`}</Text>
-                  </View>
-                  <View style={[styles.pill, { backgroundColor: colorMap.in_progress }]}>
-                    <Text style={styles.pillText}>{`${ip}/${total}`}</Text>
-                  </View>
-                  <View style={[styles.pill, { backgroundColor: colorMap.mastered }]}>
-                    <Text style={styles.pillText}>{`${m}/${total}`}</Text>
-                  </View>
-                </View>
+                <View style={[styles.pill, { backgroundColor: '#ff3b30' }]}><Text style={styles.pillText}>{c.nm}/{c.total}</Text></View>
+                <View style={[styles.pill, { backgroundColor: '#ff9f0a' }]}><Text style={styles.pillText}>{c.ip}/{c.total}</Text></View>
+                <View style={[styles.pill, { backgroundColor: '#34c759' }]}><Text style={styles.pillText}>{c.m}/{c.total}</Text></View>
               </View>
             );
           })}
         </View>
       ))}
+
+      <View style={{ height: 24 }} />
     </ScrollView>
   );
 }
@@ -128,28 +149,26 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container:     { padding: 16, paddingBottom: 32 },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText:     { textAlign: 'center', color: '#666', padding: 16 },
+  h1:            { fontSize: 22, fontWeight: '700', marginBottom: 12 },
+  blockTitle:    { fontSize: 16, fontWeight: '700', marginTop: 8, marginBottom: 6 },
 
-  row: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    justifyContent: 'space-between',
-    marginBottom:   12
-  },
-  header:        { fontSize: 20, fontWeight: '700' },
-  pills:         { flexDirection: 'row' },
-  pill: {
+  emptyText:     { textAlign: 'center', color: '#666', paddingHorizontal: 20 },
+
+  pillRow:       { flexDirection: 'row', marginBottom: 12 },
+  pill:          {
     paddingHorizontal: 10,
     paddingVertical:   4,
     borderRadius:      8,
     marginLeft:        6,
-    minWidth:          50,       // ← largeur minimale uniforme
-    alignItems:        'center', // ← centre le texte horizontalement
-    justifyContent:    'center'  // ← centre le texte verticalement
+    minWidth:          50,
+    alignItems:        'center',
+    justifyContent:    'center'
   },
   pillText:      { color: 'white', fontWeight: '600' },
 
-  section:       { marginTop: 24 },
+  section:       { marginTop: 16 },
   cursusHeader:  { fontSize: 18, fontWeight: '700', marginBottom: 8 },
+
+  chapterRow:    { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   chapterTitle:  { fontSize: 16, flex: 1 }
 });
