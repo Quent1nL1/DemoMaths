@@ -8,7 +8,7 @@
   <title>DemoMaths</title>
 
   <style>
-    /* Base layout */
+    /* base layout */
     #root, body, html { width:100%; margin:0; padding:0; min-height:100% }
     #root { flex-shrink:0; flex-basis:auto; flex-grow:1; display:flex; flex:1 }
     html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; height:calc(100% + env(safe-area-inset-top)) }
@@ -19,79 +19,49 @@
     }
   </style>
 
-  <!-- ✅ Favicons -->
+  <!-- Favicons / PWA -->
   <link rel="icon" href="favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
-
-  <!-- ✅ Apple / iOS -->
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
-
-  <!-- ✅ PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#ffffff">
 
-  <!-- JS & CSS de l'app (garde tes noms de fichiers) -->
+  <!-- JS & CSS de l'app -->
   <script defer src="static/js/775.e88d0e4b.js"></script>
   <script defer src="static/js/main.78bf0fee.js"></script>
   <link rel="stylesheet" href="static/css/775.a3f350f7.css" />
 
-  <!-- ✅ Préload des différentes sources de la police (local + CDNs) -->
+  <!-- ✅ Force la police locale attendue par react-native-vector-icons / expo -->
   <link rel="preload" href="MaterialCommunityIcons.ttf" as="font" type="font/ttf" crossorigin="anonymous">
-  <link rel="preload" href="https://unpkg.com/react-native-vector-icons@latest/Fonts/MaterialCommunityIcons.ttf" as="font" type="font/ttf" crossorigin="anonymous">
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/react-native-vector-icons@latest/Fonts/MaterialCommunityIcons.ttf" as="font" type="font/ttf" crossorigin="anonymous">
-  <link rel="preload" href="https://unpkg.com/@expo/vector-icons@latest/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf" as="font" type="font/ttf" crossorigin="anonymous">
 
-  <!-- ✅ Règle unique @font-face avec fallback en cascade -->
   <style>
+    /* Règle @font-face locale (pas de CDN => pas de CORS) */
     @font-face {
       font-family: "MaterialCommunityIcons";
-      src:
-        /* 1) local à la racine du site (recommandé) */
-        url("MaterialCommunityIcons.ttf") format("truetype"),
-        /* 2) CDNs de secours */
-        url("https://unpkg.com/react-native-vector-icons@latest/Fonts/MaterialCommunityIcons.ttf") format("truetype"),
-        url("https://cdn.jsdelivr.net/npm/react-native-vector-icons@latest/Fonts/MaterialCommunityIcons.ttf") format("truetype"),
-        url("https://unpkg.com/@expo/vector-icons@latest/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf") format("truetype");
+      src: url("MaterialCommunityIcons.ttf") format("truetype");
       font-weight: normal;
       font-style: normal;
       font-display: swap;
     }
-
-    /* Sélecteurs de sauvegarde (au cas où une autre règle change la famille) */
+    /* au cas où une règle du bundle change la famille */
     [class*="material-community"], [class*="MaterialCommunityIcons"], [style*="MaterialCommunityIcons"] {
       font-family: "MaterialCommunityIcons" !important;
     }
   </style>
 
-  <!-- ✅ Double filet : charge explicitement via FontFace si nécessaire -->
+  <!-- Double filet : charge explicitement la fonte locale via l’API FontFace -->
   <script>
-    (function () {
-      var sources = [
-        "MaterialCommunityIcons.ttf",
-        "https://unpkg.com/react-native-vector-icons@latest/Fonts/MaterialCommunityIcons.ttf",
-        "https://cdn.jsdelivr.net/npm/react-native-vector-icons@latest/Fonts/MaterialCommunityIcons.ttf",
-        "https://unpkg.com/@expo/vector-icons@latest/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf"
-      ];
-      (async () => {
-        // Si le navigateur sait déjà rendre la fonte, ne rien faire
-        if (document.fonts && document.fonts.check('16px "MaterialCommunityIcons"')) return;
-
-        for (const url of sources) {
-          try {
-            const f = new FontFace("MaterialCommunityIcons", `url(${url}) format('truetype')`, {
-              style: "normal", weight: "400", display: "swap"
-            });
-            const loaded = await f.load();
-            document.fonts.add(loaded);
-            // Sortir dès qu'une source marche
-            break;
-          } catch(e) {
-            // essaie la source suivante
-          }
+    (async () => {
+      try {
+        if (document.fonts && !document.fonts.check('16px "MaterialCommunityIcons"')) {
+          const f = new FontFace("MaterialCommunityIcons", "url(MaterialCommunityIcons.ttf) format('truetype')",
+            { style: "normal", weight: "400", display: "swap" });
+          const loaded = await f.load();
+          document.fonts.add(loaded);
         }
-      })();
+      } catch (e) { /* on se repose sur @font-face */ }
     })();
   </script>
 </head>
