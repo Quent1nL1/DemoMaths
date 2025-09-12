@@ -37,13 +37,17 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#ffffff">
 
-  <!-- ✅ Police MaterialCommunityIcons (CDN) -->
+  <!-- JS & CSS de ton app -->
+  <script defer src="static/js/775.e88d0e4b.js"></script>
+  <script defer src="static/js/main.78bf0fee.js"></script>
+  <link rel="stylesheet" href="static/css/775.a3f350f7.css" />
+
+  <!-- ✅ Force la bonne police MaterialCommunityIcons (écrase la règle du bundle) -->
   <link rel="preload"
         href="https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf"
-        as="font" type="font/ttf" crossorigin />
+        as="font" type="font/ttf" crossorigin="anonymous" />
 
   <style>
-    /* Déclaration CSS (1er filet) */
     @font-face {
       font-family: "MaterialCommunityIcons";
       src: url("https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf")
@@ -52,61 +56,12 @@
       font-style: normal;
       font-display: swap;
     }
+
+    /* Assure que les éléments utilisent bien cette fonte */
+    [class*="material-community"], [class*="MaterialCommunityIcons"] {
+      font-family: "MaterialCommunityIcons" !important;
+    }
   </style>
-
-  <!-- JS -->
-  <script defer src="static/js/775.e88d0e4b.js"></script>
-  <script defer src="static/js/main.78bf0fee.js"></script>
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="static/css/775.a3f350f7.css" />
-
-  <!-- FORCE la bonne police MaterialCommunityIcons (écrase la règle du bundle) -->
-<link rel="preload"
-      href="https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf"
-      as="font" type="font/ttf" crossorigin="anonymous" />
-
-<style>
-/* même nom de famille pour écraser la règle précédente */
-@font-face {
-  font-family: "MaterialCommunityIcons";
-  src: url("https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf")
-       format("truetype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* assure que les éléments utilisent bien cette fonte (utile si une autre règle CSS force autre chose) */
-[class*="material-community"], [class*="MaterialCommunityIcons"] {
-  font-family: "MaterialCommunityIcons" !important;
-}
-</style>
-
-
-  <!-- Charger explicitement la fonte via l’API FontFace (2e filet) -->
-  <script>
-    (function () {
-      var url = "https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf";
-      try {
-        var f = new FontFace("MaterialCommunityIcons", "url(" + url + ") format('truetype')", {
-          style: "normal",
-          weight: "400",
-          display: "swap"
-        });
-        f.load().then(function(loaded) {
-          document.fonts.add(loaded);
-          // Optionnel : forcer un reflow pour que la barre d’onglets se ré-affiche avec les glyphes
-          document.documentElement.classList.add('mci-loaded');
-        }).catch(function(e){
-          console.warn("MaterialCommunityIcons FontFace load error:", e);
-        });
-      } catch (e) {
-        // vieux navigateurs : se reposer sur @font-face
-        console.warn("FontFace API not available, falling back to @font-face.");
-      }
-    })();
-  </script>
 </head>
 <body>
   <noscript>
