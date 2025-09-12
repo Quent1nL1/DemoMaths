@@ -61,6 +61,29 @@
   <!-- CSS -->
   <link rel="stylesheet" href="static/css/775.a3f350f7.css" />
 
+  <!-- FORCE la bonne police MaterialCommunityIcons (écrase la règle du bundle) -->
+<link rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf"
+      as="font" type="font/ttf" crossorigin="anonymous" />
+
+<style>
+/* même nom de famille pour écraser la règle précédente */
+@font-face {
+  font-family: "MaterialCommunityIcons";
+  src: url("https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf")
+       format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* assure que les éléments utilisent bien cette fonte (utile si une autre règle CSS force autre chose) */
+[class*="material-community"], [class*="MaterialCommunityIcons"] {
+  font-family: "MaterialCommunityIcons" !important;
+}
+</style>
+
+
   <!-- Charger explicitement la fonte via l’API FontFace (2e filet) -->
   <script>
     (function () {
