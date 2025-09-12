@@ -15,26 +15,12 @@
       padding: 0;
       min-height: 100%;
     }
-    #root {
-      flex-shrink: 0;
-      flex-basis: auto;
-      flex-grow: 1;
-      display: flex;
-      flex: 1;
-    }
-    html {
-      scroll-behavior: smooth;
-      -webkit-text-size-adjust: 100%;
-      height: calc(100% + env(safe-area-inset-top));
-    }
+    #root { flex-shrink: 0; flex-basis: auto; flex-grow: 1; display: flex; flex: 1; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; height: calc(100% + env(safe-area-inset-top)); }
     body {
-      display: flex;
-      overflow-y: auto;
-      overscroll-behavior-y: none;
-      text-rendering: optimizeLegibility;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      -ms-overflow-style: scrollbar;
+      display: flex; overflow-y: auto; overscroll-behavior-y: none;
+      text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale; -ms-overflow-style: scrollbar;
     }
   </style>
 
@@ -51,12 +37,13 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#ffffff">
 
-  <!-- ✅ Charger la police MaterialCommunityIcons depuis CDN -->
+  <!-- ✅ Police MaterialCommunityIcons (CDN) -->
   <link rel="preload"
         href="https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf"
         as="font" type="font/ttf" crossorigin />
 
   <style>
+    /* Déclaration CSS (1er filet) */
     @font-face {
       font-family: "MaterialCommunityIcons";
       src: url("https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf")
@@ -73,6 +60,30 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="static/css/775.a3f350f7.css" />
+
+  <!-- Charger explicitement la fonte via l’API FontFace (2e filet) -->
+  <script>
+    (function () {
+      var url = "https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf";
+      try {
+        var f = new FontFace("MaterialCommunityIcons", "url(" + url + ") format('truetype')", {
+          style: "normal",
+          weight: "400",
+          display: "swap"
+        });
+        f.load().then(function(loaded) {
+          document.fonts.add(loaded);
+          // Optionnel : forcer un reflow pour que la barre d’onglets se ré-affiche avec les glyphes
+          document.documentElement.classList.add('mci-loaded');
+        }).catch(function(e){
+          console.warn("MaterialCommunityIcons FontFace load error:", e);
+        });
+      } catch (e) {
+        // vieux navigateurs : se reposer sur @font-face
+        console.warn("FontFace API not available, falling back to @font-face.");
+      }
+    })();
+  </script>
 </head>
 <body>
   <noscript>
