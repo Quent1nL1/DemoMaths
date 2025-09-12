@@ -59,12 +59,13 @@ export default function ChapterScreen({ route }: any) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.h1}>{chapter.title}</Text>
-
+      <View style={styles.center}>
+      <Text style={styles.h1}>Progression </Text>
       <View style={styles.pillRow}>
         <View style={[styles.pill, { backgroundColor: '#ff3b30' }]}><Text style={styles.pillText}>{countNM}/{total}</Text></View>
         <View style={[styles.pill, { backgroundColor: '#ff9f0a' }]}><Text style={styles.pillText}>{countIP}/{total}</Text></View>
         <View style={[styles.pill, { backgroundColor: '#34c759' }]}><Text style={styles.pillText}>{countM}/{total}</Text></View>
+      </View>
       </View>
 
       <TouchableOpacity
@@ -104,7 +105,7 @@ export default function ChapterScreen({ route }: any) {
 const styles = StyleSheet.create({
   container:    { padding: 20 },
   center:       { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  h1:           { fontSize: 22, fontWeight: '700', marginBottom: 12 },
+  h1:           { fontSize: 22, fontWeight: '500', marginBottom: 12 },
   pillRow:      { flexDirection: 'row', marginBottom: 12 },
   pill:         { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginRight: 8 },
   pillText:     { color: 'white', fontWeight: '600' },

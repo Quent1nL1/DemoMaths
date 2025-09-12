@@ -3,7 +3,7 @@ import create from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type ThemeColor = '#808080' | '#8e44ad' | '#34c759' | '#ff3b30';
-export const ALL_CURSUS = ['MathsSup','MathsSpé','SU - MA001','SU - MA002','SU - MA003'] as const;
+export const ALL_CURSUS = [] as const;
 
 interface SettingsState {
   themeColor: ThemeColor;

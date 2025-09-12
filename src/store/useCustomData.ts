@@ -39,7 +39,6 @@ type CustomDataState = {
     csv: string
   ) => { imported: number; errors: string[] };
 
-  // Reset (optionnel)
   clearAll: () => void;
 };
 
@@ -49,54 +48,75 @@ function save(state: Pick<CustomDataState, 'cursus' | 'chapters' | 'demos'>) {
   AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
 }
 
+/**
+ * CSV parser robuste :
+ * - Parcourt caractère par caractère.
+ * - Respecte les champs entre guillemets, y compris les sauts de ligne internes.
+ * - Gère l’échappement "" -> " en CSV.
+ */
 function parseCsv(csv: string): Record<string, string>[] {
-  const rows: Record<string, string>[] = [];
-  const lines = csv
-    .replace(/\r\n?/g, '\n')
-    .split('\n')
-    .filter((l) => l.trim().length > 0);
-  if (lines.length === 0) return rows;
+  const s = csv.replace(/\r\n?/g, '\n');
+  const rows: string[][] = [];
 
-  const headers = splitCsvLine(lines[0]).map((h) => h.trim());
-  for (let i = 1; i < lines.length; i++) {
-    const cols = splitCsvLine(lines[i]);
-    if (cols.length === 1 && cols[0].trim() === '') continue;
-    const row: Record<string, string> = {};
-    headers.forEach((h, idx) => {
-      row[h] = (cols[idx] ?? '').trim();
-    });
-    rows.push(row);
-  }
-  return rows;
-}
-
-function splitCsvLine(line: string): string[] {
-  const out: string[] = [];
-  let cur = '';
+  let cell = '';
+  let row: string[] = [];
   let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+
     if (inQuotes) {
-      if (ch === '"' && line[i + 1] === '"') {
-        cur += '"';
+      if (ch === '"' && s[i + 1] === '"') {
+        // échappement de guillemet
+        cell += '"';
         i++;
       } else if (ch === '"') {
         inQuotes = false;
       } else {
-        cur += ch;
+        cell += ch;
       }
     } else {
-      if (ch === ',') {
-        out.push(cur);
-        cur = '';
-      } else if (ch === '"') {
+      if (ch === '"') {
         inQuotes = true;
+      } else if (ch === ',') {
+        row.push(cell);
+        cell = '';
+      } else if (ch === '\n') {
+        row.push(cell);
+        rows.push(row);
+        row = [];
+        cell = '';
       } else {
-        cur += ch;
+        cell += ch;
       }
     }
   }
-  out.push(cur);
+  // dernière cellule / dernière ligne
+  row.push(cell);
+  rows.push(row);
+
+  // aucun contenu utile
+  if (rows.length === 0 || rows[0].every(v => (v ?? '').trim() === '')) return [];
+
+  // En-têtes + BOM éventuel
+  const headers = rows[0].map(h => h.trim());
+  if (headers[0] && headers[0].charCodeAt(0) === 0xfeff) {
+    headers[0] = headers[0].slice(1);
+  }
+
+  const out: Record<string, string>[] = [];
+  for (let i = 1; i < rows.length; i++) {
+    const cols = rows[i];
+    // ignorer lignes totalement vides
+    const allEmpty = cols.every(c => (c ?? '').trim() === '');
+    if (allEmpty) continue;
+
+    const obj: Record<string, string> = {};
+    headers.forEach((h, idx) => {
+      obj[h] = (cols[idx] ?? '').trim();
+    });
+    out.push(obj);
+  }
   return out;
 }
 
@@ -122,7 +142,7 @@ export const useCustomData = create<CustomDataState>((set, get) => ({
       const next = [...st.chapters];
       if (idx >= 0) next[idx] = { ...next[idx], ...c };
       else next.push(c);
-      // S'assure que le cursus existe
+      // s'assure que le cursus existe
       if (!st.cursus.some((k) => k.code === c.cursus_code)) {
         st.cursus.push({ code: c.cursus_code, title: c.cursus_code });
       }
@@ -256,4 +276,3 @@ export function mergeById<T extends { id: string }>(a: T[], b: T[]): T[] {
   for (const x of b) map.set(x.id, x);
   return Array.from(map.values());
 }
-

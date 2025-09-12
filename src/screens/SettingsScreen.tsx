@@ -9,17 +9,18 @@ import {
   TextInput,
 } from 'react-native';
 import Checkbox from 'expo-checkbox';
-import { useSettings, ALL_CURSUS } from '../store/useSettings';
+import { useSettings } from '../store/useSettings';
 import { useCustomData } from '../store/useCustomData';
-import { getAllChapters } from '../lib/dataSource';
-import type { Chapter } from '../store/useCustomData';
+import { getAllCursus } from '../lib/dataSource';
+import type { Cursus } from '../store/useCustomData';
 
-// --- Contenu libre pour "Informations & crédits" (modifiez ce bloc) ---
+// --- Contenu libre pour "Informations & crédits"
 const INFO_LINES = [
-  'DemoMaths – Application de flash cards pour démonstrations.',
-  'Crédits : Base SQL officielle + données personnalisées locales.',
-  'Auteurs / Contributeurs : …',
-  'Contact : …',
+  'DemoMaths – Application de flash cards pour démonstrations mathématiques.',
+  'Fonctionnement : Base SQL officielle + données personnalisées locales.',
+  "Tutoriel : (W.I.P.) ",
+  "Auteurs / Contributeurs : \n      • Quentin Lyonnet - développeur de l'application et contributeur principal, étudiant à Sorbonne université et ancien préparationnaire.",
+  "Contact : quentin@lyonnet.org - veillez mettre dans l'objet de votre mail [DemoMaths] afin qu'il soit traité. Je suis un étudiant qui fait ça sur son temps libre, merci de votre patience :)",
 ];
 
 function normalizeHex(s: string): string | null {
@@ -30,14 +31,7 @@ function normalizeHex(s: string): string | null {
   return null;
 }
 
-// Sélecteur de couleur très simple
-function ColorBar({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (hex: string) => void;
-}) {
+function ColorBar({ value, onChange }: { value: string; onChange: (hex: string) => void; }) {
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
 
@@ -48,23 +42,15 @@ function ColorBar({
           type="color"
           value={value}
           onChange={(e: any) => onChange(e.target.value)}
-          // Large barre cliquable
           style={{
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            background: 'transparent',
-            padding: 0,
-            margin: 0,
-            display: 'block',
-            cursor: 'pointer',
+            width: '100%', height: '100%', border: 'none',
+            background: 'transparent', padding: 0, margin: 0, display: 'block', cursor: 'pointer',
           }}
         />
       </View>
     );
   }
 
-  // Fallback natif : prévisualisation + champ hex
   return (
     <View>
       <View style={[styles.colorPreview, { backgroundColor: value }]} />
@@ -92,24 +78,23 @@ export default function SettingsScreen() {
   const selectedCursus  = useSettings((s) => s.selectedCursus);
   const toggleCursus    = useSettings((s) => s.toggleCursus);
 
-  const customCursus    = useCustomData((s) => s.cursus);
+  // re-déclenche le chargement quand l’utilisateur ajoute/édite des cursus locaux
+  const localCursus     = useCustomData((s) => s.cursus);
 
-  // Récupère les chapitres (SQL + local via dataSource) pour extraire les cursus présents en base
-  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [cursusList, setCursusList] = useState<Cursus[]>([]);
+
   useEffect(() => {
     (async () => {
-      const ch = await getAllChapters();
-      setChapters(ch);
+      const cu = await getAllCursus(); // DB + locaux (fusion déjà faite côté dataSource)
+      setCursusList(cu);
     })();
-  }, [customCursus]); // se met aussi à jour si on crée un cursus/chapitre custom
+  }, [localCursus]);
 
-  // Cursus disponibles = ALL_CURSUS + cursus locaux + cursus vus dans les chapitres (SQL + local)
-  const availableCursus: string[] = useMemo(() => {
-    const set = new Set<string>(ALL_CURSUS as unknown as string[]);
-    customCursus.forEach((c) => set.add(c.code));
-    chapters.forEach((ch) => set.add(ch.cursus_code));
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [customCursus, chapters]);
+  // Liste disponible = exactement DB + locaux (déjà fusionnés) ; tri par titre
+  const available = useMemo(
+    () => [...cursusList].sort((a, b) => (a.title ?? a.code).localeCompare(b.title ?? b.code)),
+    [cursusList]
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -120,7 +105,7 @@ export default function SettingsScreen() {
       {/* ==== Cursus affichés ==== */}
       <Text style={[styles.h2, { marginTop: 16 }]}>Cursus affichés</Text>
       <View style={{ marginTop: 6 }}>
-        {availableCursus.map((code) => (
+        {available.map(({ code, title }) => (
           <View key={code} style={styles.row}>
             <Checkbox
               value={selectedCursus.has(code)}
@@ -128,10 +113,10 @@ export default function SettingsScreen() {
               color={themeColor}
               style={{ marginRight: 8 }}
             />
-            <Text>{code}</Text>
+            <Text>{title ?? code}</Text>
           </View>
         ))}
-        {availableCursus.length === 0 && (
+        {available.length === 0 && (
           <Text style={styles.helpText}>
             Aucun cursus détecté. Ajoutez-en dans « Personnalisation ».
           </Text>

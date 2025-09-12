@@ -438,7 +438,6 @@ export default function CustomizeScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.h1}>Personnalisation</Text>
 
       {/* ==== CURSUS ==== */}
       <Section title="Cursus (CSV: code,title)">
