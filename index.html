@@ -51,11 +51,23 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#ffffff">
 
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="DemoMaths">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- ✅ Charger la police MaterialCommunityIcons depuis CDN -->
+  <link rel="preload"
+        href="https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf"
+        as="font" type="font/ttf" crossorigin />
 
-  <!-- JS (chemins relatifs corrigés) -->
+  <style>
+    @font-face {
+      font-family: "MaterialCommunityIcons";
+      src: url("https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf")
+           format("truetype");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
+
+  <!-- JS -->
   <script defer src="static/js/775.e88d0e4b.js"></script>
   <script defer src="static/js/main.78bf0fee.js"></script>
 
