@@ -8,56 +8,55 @@
   <title>DemoMaths</title>
 
   <style>
-    #root, body, html {
-      width: 100%;
-      -webkit-overflow-scrolling: touch;
-      margin: 0;
-      padding: 0;
-      min-height: 100%;
-    }
-    #root { flex-shrink: 0; flex-basis: auto; flex-grow: 1; display: flex; flex: 1; }
-    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; height: calc(100% + env(safe-area-inset-top)); }
+    #root, body, html { width:100%; margin:0; padding:0; min-height:100% }
+    #root { flex-shrink:0; flex-basis:auto; flex-grow:1; display:flex; flex:1 }
+    html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; height:calc(100% + env(safe-area-inset-top)) }
     body {
-      display: flex; overflow-y: auto; overscroll-behavior-y: none;
-      text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale; -ms-overflow-style: scrollbar;
+      display:flex; overflow-y:auto; overscroll-behavior-y:none;
+      text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale; -ms-overflow-style:scrollbar;
     }
   </style>
 
-  <!-- ✅ Favicons -->
+  <!-- Favicons / PWA -->
   <link rel="icon" href="favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
-
-  <!-- ✅ Apple / iOS -->
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
-
-  <!-- ✅ PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#ffffff">
 
-  <!-- JS & CSS de ton app -->
+  <!-- JS & CSS de l'app -->
   <script defer src="static/js/775.e88d0e4b.js"></script>
   <script defer src="static/js/main.78bf0fee.js"></script>
   <link rel="stylesheet" href="static/css/775.a3f350f7.css" />
 
-  <!-- ✅ Force la bonne police MaterialCommunityIcons (écrase la règle du bundle) -->
-  <link rel="preload"
-        href="https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf"
-        as="font" type="font/ttf" crossorigin="anonymous" />
+  <!-- ✅ Précharge avec fallback (local → unpkg → jsDelivr) -->
+  <link rel="preload" href="MaterialCommunityIcons.ttf" as="font" type="font/ttf" crossorigin="anonymous">
+  <link rel="preload" href="https://unpkg.com/react-native-vector-icons@latest/Fonts/MaterialCommunityIcons.ttf" as="font" type="font/ttf" crossorigin="anonymous">
+  <link rel="preload" href="https://unpkg.com/@expo/vector-icons@latest/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf" as="font" type="font/ttf" crossorigin="anonymous">
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/react-native-vector-icons@latest/Fonts/MaterialCommunityIcons.ttf" as="font" type="font/ttf" crossorigin="anonymous">
 
+  <!-- ✅ Surcharge @font-face avec plusieurs sources -->
   <style>
     @font-face {
       font-family: "MaterialCommunityIcons";
-      src: url("https://cdn.jsdelivr.net/npm/@expo/vector-icons@13.0.0/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf")
-           format("truetype");
+      src:
+        /* 1) si tu poses le fichier à la racine du repo (facultatif mais idéal) */
+        url("MaterialCommunityIcons.ttf") format("truetype"),
+        /* 2) unpkg (react-native-vector-icons) */
+        url("https://unpkg.com/react-native-vector-icons@latest/Fonts/MaterialCommunityIcons.ttf") format("truetype"),
+        /* 3) unpkg (expo/vector-icons) */
+        url("https://unpkg.com/@expo/vector-icons@latest/build/vendor/react-native-vector-icons/MaterialCommunityIcons.ttf") format("truetype"),
+        /* 4) jsDelivr (react-native-vector-icons) */
+        url("https://cdn.jsdelivr.net/npm/react-native-vector-icons@latest/Fonts/MaterialCommunityIcons.ttf") format("truetype");
       font-weight: normal;
       font-style: normal;
       font-display: swap;
     }
 
-    /* Assure que les éléments utilisent bien cette fonte */
+    /* s’assure que les composants utilisent bien cette fonte */
     [class*="material-community"], [class*="MaterialCommunityIcons"] {
       font-family: "MaterialCommunityIcons" !important;
     }
@@ -65,15 +64,11 @@
 </head>
 <body>
   <noscript>
-    <form action="" style="background-color:#fff;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999">
+    <form action="" style="background:#fff;position:fixed;inset:0;z-index:9999">
       <div style="font-size:18px;font-family:Helvetica,sans-serif;line-height:24px;margin:10%;width:80%">
         <p>Oh no! It looks like JavaScript is not enabled in your browser.</p>
         <p style="margin:20px 0">
-          <button type="submit"
-                  style="background-color:#4630eb;border-radius:100px;border:none;box-shadow:none;color:#fff;
-                         cursor:pointer;font-weight:700;line-height:20px;padding:6px 16px">
-            Reload
-          </button>
+          <button type="submit" style="background:#4630eb;border-radius:100px;border:none;color:#fff;font-weight:700;line-height:20px;padding:6px 16px">Reload</button>
         </p>
       </div>
     </form>
