@@ -38,18 +38,28 @@
     }
   </style>
 
-  <!-- Corrigé : chemin relatif -->
-  <link rel="manifest" href="manifest.json" />
+  <!-- ✅ Favicons -->
+  <link rel="icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+
+  <!-- ✅ Apple / iOS -->
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- ✅ PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffffff">
 
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-touch-fullscreen" content="yes">
   <meta name="apple-mobile-web-app-title" content="DemoMaths">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- Corrigé : chemins relatifs (pas de /DemoMaths/) -->
+  <!-- JS (chemins relatifs corrigés) -->
   <script defer src="static/js/775.e88d0e4b.js"></script>
   <script defer src="static/js/main.78bf0fee.js"></script>
+
+  <!-- CSS -->
   <link rel="stylesheet" href="static/css/775.a3f350f7.css" />
 </head>
 <body>
