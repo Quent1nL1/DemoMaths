@@ -1,0 +1,9 @@
+/* src/global-icons.css */
+/* On n’écrit PAS d'@font-face ici (évite les erreurs css-loader et les URLs absolues). */
+/* On s'assure juste que la famille soit utilisée une fois la fonte chargée par JS. */
+
+[class*="material-community"],
+[class*="MaterialCommunityIcons"],
+[style*="MaterialCommunityIcons"] {
+  font-family: "MaterialCommunityIcons" !important;
+}
