@@ -19,7 +19,7 @@ const INFO_LINES = [
   'DemoMaths – Application de flash cards pour démonstrations mathématiques.',
   'Fonctionnement : Base SQL officielle + données personnalisées locales.',
   "Tutoriel : (W.I.P.) ",
-  "Auteurs / Contributeurs : \n      • Quentin Lyonnet - développeur de l'application et contributeur principal, étudiant à Sorbonne université et ancien préparationnaire.",
+  "Auteurs / Contributeurs : \n      • Quentin Lyonnet - développeur de l'application et contributeur principal, étudiant à Sorbonne université et ancien préparationnaire.\n      • Vadim Godonier - contributeur principal, étudiant à l'université Jean Monnet.",
   "Contact : quentin@lyonnet.org - veillez mettre dans l'objet de votre mail [DemoMaths] afin qu'il soit traité. Je suis un étudiant qui fait ça sur son temps libre, merci de votre patience :)",
 ];
 

@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "./static/css/main.bbd02c2f.css",
-    "main.js": "./static/js/main.ff32f640.js",
+    "main.js": "./static/js/main.5701536c.js",
     "static/js/732.783bc47a.chunk.js": "./static/js/732.783bc47a.chunk.js",
     "static/js/339.8c32efe1.js": "./static/js/339.8c32efe1.js",
     "static/media/MaterialCommunityIcons.ttf": "./static/media/MaterialCommunityIcons.5d42b4e60858731e7b65.ttf",
@@ -72,13 +72,13 @@
     "serve.json": "./serve.json",
     "manifest.json": "./manifest.json",
     "main.bbd02c2f.css.map": "./static/css/main.bbd02c2f.css.map",
-    "main.ff32f640.js.map": "./static/js/main.ff32f640.js.map",
+    "main.5701536c.js.map": "./static/js/main.5701536c.js.map",
     "732.783bc47a.chunk.js.map": "./static/js/732.783bc47a.chunk.js.map",
     "339.8c32efe1.js.map": "./static/js/339.8c32efe1.js.map"
   },
   "entrypoints": [
     "static/js/339.8c32efe1.js",
     "static/css/main.bbd02c2f.css",
-    "static/js/main.ff32f640.js"
+    "static/js/main.5701536c.js"
   ]
 }
