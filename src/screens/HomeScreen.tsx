@@ -8,52 +8,66 @@ import {
   Image,
   StyleSheet,
   LayoutChangeEvent,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { useSettings } from '../store/useSettings';
 import { getAllChapters, getCursusMap } from '../lib/dataSource';
-import type { Chapter } from '../store/useCustomData';
+import type { Chapter, Cursus } from '../store/useCustomData';
 
+const CONTAINER_PAD = 16; // doit rester sync avec styles.container.padding
 const GAP = 12;
-const PADDING_H = 16;
-const MAX_COLS = 4;
-const MIN_CARD_WIDTH = 200;
+const CARD_MIN_W = 170;
+const CARD_RADIUS = 12;
+const IMG_HEIGHT = 120;
+const TITLE_HEIGHT = 60;
 
-function computeGrid(containerWidth: number) {
-  const inner = Math.max(0, containerWidth - 2 * PADDING_H);
-  for (let cols = MAX_COLS; cols >= 1; cols--) {
-    const totalGaps = GAP * (cols - 1);
-    const base = Math.floor((inner - totalGaps) / cols);
-    if (base >= MIN_CARD_WIDTH) {
-      const used = base * cols + totalGaps;
-      const remainder = Math.max(0, inner - used);
-      return { cols, cardW: base, remainder };
-    }
-  }
-  return { cols: 1, cardW: inner, remainder: 0 };
+type CursusEx = Cursus & { description?: string | null };
+
+// largeur utile = largeur - marges intérieures du conteneur
+function innerWidth(totalWidth: number) {
+  return Math.max(0, totalWidth - 2 * CONTAINER_PAD);
 }
 
-function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
+// ➜ Sur téléphone (natif) et petits viewports web, on force 2 colonnes.
+//    Le calcul tient compte du GAP pour que deux cartes + l'espace tiennent parfaitement.
+function computeGrid(totalWidth: number): { cols: number; cardW: number } {
+  const w = innerWidth(totalWidth);
+  const isPhoneLike = Platform.OS !== 'web' || w < 520; // iPhone et petits écrans web
+  if (isPhoneLike) {
+    const cols = 2;
+    const cardW = Math.floor((w - GAP * (cols - 1)) / cols);
+    return { cols, cardW };
+  }
+  // Écrans larges : comportement précédent
+  const cols = Math.max(1, Math.floor((w + GAP) / (CARD_MIN_W + GAP)));
+  const cardW = Math.floor((w - GAP * (cols - 1)) / cols);
+  return { cols, cardW };
 }
 
 export default function HomeScreen({ navigation }: any) {
-  const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [cursusMap, setCursusMap] = useState<Record<string, { code: string; title?: string }>>({});
   const selectedCursus = useSettings(s => s.selectedCursus);
   const themeColor = useSettings(s => s.themeColor);
 
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [cursusMap, setCursusMap] = useState<Record<string, CursusEx>>({});
+  const [grid, setGrid] = useState<{ cols: number; cardW: number }>(() =>
+    computeGrid(Dimensions.get('window').width)
+  );
+  const [openDesc, setOpenDesc] = useState<string | null>(null);
+
   useEffect(() => {
     (async () => {
-      const [ch, cu] = await Promise.all([getAllChapters(), getCursusMap()]);
-      setChapters(ch);
-      setCursusMap(cu);
+      const [chs, cm] = await Promise.all([getAllChapters(), getCursusMap()]);
+      setChapters(chs);
+      setCursusMap(cm as Record<string, CursusEx>);
     })();
   }, []);
 
-  const [grid, setGrid] = useState<{ cols: number; cardW: number; remainder: number }>({ cols: 1, cardW: 320, remainder: 0 });
-  const onLayout = (e: LayoutChangeEvent) => setGrid(computeGrid(e.nativeEvent.layout.width));
+  const onLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    setGrid(computeGrid(w));
+  };
 
   const filtered = useMemo(
     () => chapters.filter(ch => selectedCursus.size === 0 || selectedCursus.has(ch.cursus_code)),
@@ -74,92 +88,166 @@ export default function HomeScreen({ navigation }: any) {
         return a.title.localeCompare(b.title);
       })
     );
-    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+    return map;
   }, [filtered]);
+
+  const cursusOrder = useMemo(() => {
+    const codes = Object.keys(groups);
+    return codes.sort((a, b) => {
+      const ca = cursusMap[a]?.title ?? a;
+      const cb = cursusMap[b]?.title ?? b;
+      return ca.localeCompare(cb);
+    });
+  }, [groups, cursusMap]);
+
+  const renderHeader = (code: string) => {
+    const c = cursusMap[code] as CursusEx | undefined;
+    return (
+      <View style={styles.headerRow}>
+        <Text style={styles.cursusTitle}>{c?.title ?? code}</Text>
+        <TouchableOpacity
+          accessibilityLabel="Voir la description du cursus"
+          onPress={() => setOpenDesc(prev => (prev === code ? null : code))}
+          style={styles.infoBtn}
+        >
+          <Text style={styles.infoBtnText}>?</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderDescription = (code: string) => {
+    if (openDesc !== code) return null;
+    const desc = (cursusMap[code] as CursusEx | undefined)?.description;
+    return (
+      <View style={styles.descBox}>
+        <Text style={styles.descText}>
+          {desc && desc.trim().length > 0 ? desc : 'Aucune description disponible.'}
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container} onLayout={onLayout}>
-
-      {groups.map(([cursusCode, list]) => {
-        const rows = chunk(list, grid.cols);
-        const cursusTitle = cursusMap[cursusCode]?.title || cursusCode; // <-- titre si dispo
+      {cursusOrder.map(code => {
+        const list = groups[code] ?? [];
         return (
-          <View key={cursusCode} style={styles.section}>
-            <Text style={styles.cursusTitle}>{cursusTitle}</Text>
+          <View key={code} style={styles.section}>
+            {renderHeader(code)}
+            {renderDescription(code)}
 
-            {rows.map((row, rIndex) => (
-              <View key={`${cursusCode}-row-${rIndex}`} style={styles.row}>
-                {row.map((ch, j) => {
-                  const extra = j < grid.remainder ? 1 : 0;
-                  const isLast = j === row.length - 1;
-                  return (
-                    <TouchableOpacity
-                      key={ch.id}
-                      style={[
-                        styles.card,
-                        {
-                          width: grid.cardW + extra,
-                          borderColor: themeColor,
-                          marginRight: isLast ? 0 : GAP
-                        }
-                      ]}
-                      onPress={() => navigation.navigate('Chapter', { chapter: ch })}
-                    >
+            <View style={styles.row}>
+              {list.map(ch => {
+                return (
+                  <TouchableOpacity
+                    key={ch.id}
+                    style={[
+                      styles.card,
+                      {
+                        width: grid.cardW,
+                        flexBasis: grid.cardW, // évite l'étirement sur web
+                        borderColor: themeColor,
+                        marginHorizontal: GAP / 2,
+                      }
+                    ]}
+                    onPress={() => navigation.navigate('Chapter', { chapter: ch })}
+                    activeOpacity={0.85}
+                  >
+                    <View style={styles.clip}>
                       <View style={styles.imgWrap}>
                         {ch.cover_url ? (
                           <Image source={{ uri: ch.cover_url }} style={styles.img} resizeMode="cover" />
                         ) : (
-                          <View style={[styles.img, { alignItems:'center', justifyContent:'center' }]}>
-                            <Text style={{ color:'#999' }}>Sans image</Text>
+                          <View style={[styles.img, { alignItems: 'center', justifyContent: 'center' }]}>
+                            <Text style={{ color: '#999' }}>Sans image</Text>
                           </View>
                         )}
                       </View>
+
                       <View style={styles.titleWrap}>
                         <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
                           {ch.title}
                         </Text>
                       </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ))}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         );
       })}
-
-      <View style={{ height: 24 }} />
+      <View style={{ height: 16 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { paddingTop: 16, paddingBottom: 24 },
-  h1: { fontSize: 22, fontWeight: '700', marginHorizontal: 16, marginBottom: 12 },
+  container: { padding: CONTAINER_PAD },
+  section: { marginBottom: 18 },
 
-  section: { marginBottom: 16 },
-  cursusTitle: { fontSize: 18, fontWeight: '700', marginHorizontal: 16, marginBottom: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  cursusTitle: { fontSize: 18, fontWeight: '700', flex: 1 },
 
-  row: { flexDirection: 'row', paddingHorizontal: PADDING_H, marginBottom: GAP },
-
-  card: {
-    borderRadius: 16,
-    borderWidth: 2,
-    backgroundColor: '#fff',
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center'
+  infoBtn: {
+    width: 22, height: 22, borderRadius: 11,
+    borderWidth: 1, borderColor: '#aaa',
+    alignItems: 'center', justifyContent: 'center',
+    marginLeft: 8, backgroundColor: '#fff'
   },
-  imgWrap: { width: '100%', height: 80, backgroundColor: '#fafafa' },
+  infoBtnText: { fontSize: 14, fontWeight: '700', color: '#555', top: -0.5 },
+
+  descBox: {
+    backgroundColor: '#fff',
+    borderColor: '#e2e2e2',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8
+  },
+  descText: { color: '#333', lineHeight: 20 },
+
+  // conteneur des cartes : gap robuste via marges symétriques
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+    marginHorizontal: -GAP / 2, // compense la marge de chaque carte
+    alignItems: 'flex-start'
+  },
+
+  // --- Carte avec coins lissés ---
+  card: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderRadius: CARD_RADIUS,
+    marginBottom: GAP,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2
+  },
+  clip: {
+    borderRadius: CARD_RADIUS,
+    overflow: 'hidden'
+  },
+
+  imgWrap: {
+    width: '100%',
+    height: IMG_HEIGHT,
+    backgroundColor: '#fafafa'
+  },
   img: { width: '100%', height: '100%' },
 
   titleWrap: {
     width: '100%',
-    height: 52,
-    paddingHorizontal: 8,
+    height: TITLE_HEIGHT,
+    paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff'
   },
-  title: { textAlign: 'center', width: '100%', flexWrap: 'wrap' }
+  title: { textAlign: 'center', width: '100%', flexWrap: 'wrap', fontSize: 15 }
 });
