@@ -26,7 +26,15 @@ export default function ChapterScreen({ route }: any) {
   useEffect(() => {
     (async () => {
       const all = await getAllDemos();
-      setDemos(all.filter(d => d.chapter_id === chapter.id));
+      const inChapter = all.filter(d => d.chapter_id === chapter.id);
+      // 🔽 Tri strictement croissant par sort_index (numérique), puis par titre
+      inChapter.sort((a, b) => {
+        const sa = Number(a.sort_index ?? 1e9);
+        const sb = Number(b.sort_index ?? 1e9);
+        if (sa !== sb) return sa - sb;
+        return (a.title || '').localeCompare(b.title || '');
+      });
+      setDemos(inChapter);
     })();
   }, [chapter.id]);
 
@@ -60,12 +68,12 @@ export default function ChapterScreen({ route }: any) {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.center}>
-      <Text style={styles.h1}>Progression </Text>
-      <View style={styles.pillRow}>
-        <View style={[styles.pill, { backgroundColor: '#ff3b30' }]}><Text style={styles.pillText}>{countNM}/{total}</Text></View>
-        <View style={[styles.pill, { backgroundColor: '#ff9f0a' }]}><Text style={styles.pillText}>{countIP}/{total}</Text></View>
-        <View style={[styles.pill, { backgroundColor: '#34c759' }]}><Text style={styles.pillText}>{countM}/{total}</Text></View>
-      </View>
+        <Text style={styles.h1}>Progression </Text>
+        <View style={styles.pillRow}>
+          <View style={[styles.pill, { backgroundColor: '#ff3b30' }]}><Text style={styles.pillText}>{countNM}/{total}</Text></View>
+          <View style={[styles.pill, { backgroundColor: '#ff9f0a' }]}><Text style={styles.pillText}>{countIP}/{total}</Text></View>
+          <View style={[styles.pill, { backgroundColor: '#34c759' }]}><Text style={styles.pillText}>{countM}/{total}</Text></View>
+        </View>
       </View>
 
       <TouchableOpacity
