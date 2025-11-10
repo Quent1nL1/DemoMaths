@@ -1,0 +1,4 @@
+Contact: mailto:dl32752@gmail.com
+Policy: https://demo-maths.fr/
+Expires: 2026-01-01T00:00:00Z
+Preferred-Languages: fr, en
